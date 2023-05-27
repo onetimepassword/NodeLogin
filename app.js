@@ -1,6 +1,8 @@
 const express = require("express");
 const app = express();
 
+let count = 0
+
 app.get("/", (req, res) => {
   // Redirect to an alternate port (e.g., 3000)
   const redirectUrl = `http://${req.hostname}:3000${req.url}`;
@@ -80,9 +82,12 @@ app.post('/login', (req, res) => {
 
   // Perform login authentication logic
   // Replace this with your actual login authentication logic
+  count += 1;
+  console.log("count " + count);
 
   if (username === 'john' && password === 'secret') {
-    res.json({ message: 'Login successful' });
+    res.json({ message: 'Login successful', code: count });
+	
   } else {
     res.status(401).json({ error: 'Invalid credentials' });
   }
