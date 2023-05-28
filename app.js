@@ -62,8 +62,8 @@ app.post('/register', (req, res) => {
             } else {
               console.log('Registered user: ' + username);
               return res.json({ error: 'Registered user' });
-	    }
-	  });
+            }
+          });
         });
       }
     }
@@ -88,9 +88,9 @@ app.post('/login', (req, res) => {
           if (err || !result) {
             if (!result) {
               console.log('Invalid credentials: ' + username);
-	    } else {
+            } else {
               console.log(err.stack);
-	    }
+            }
             return res.status(401).json({ error: 'Invalid credentials' });
           }
           console.log('Login: ' + username);
