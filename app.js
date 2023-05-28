@@ -45,19 +45,26 @@ app.post('/register', (req, res) => {
       console.log(err.stack);
     } else {
       if (resp.rows.length == 1) {
-        console.log(resp.rows[0]);
+	console.log('Already registered: ' + username);
         return res.status(500).json({ error: 'Username already taken' });
       } else { 
-        const insert = 'INSERT INTO users(username, password) VALUES ($1, $2)'
-        const user = [username, password]
-        pool.query(insert, user, (err, resp) => {
+        bcrypt.hash(password, 10, (err, hashedPassword) => {
           if (err) {
             console.log(err.stack);
-            return res.status(500).json({ error: 'Server error adding user: ' + username});
-          } else {
-            return res.json({ error: 'Registered user' });
-	  }
-	});
+            return res.status(500).json({ error: 'Internal server error' });
+          }
+          const insert = 'INSERT INTO users(username, password) VALUES ($1, $2)'
+          const user = [username, hashedPassword]
+          pool.query(insert, user, (err, resp) => {
+            if (err) {
+              console.log(err.stack);
+              return res.status(500).json({ error: 'Server error adding user: ' + username});
+            } else {
+              console.log('Registered user: ' + username);
+              return res.json({ error: 'Registered user' });
+	    }
+	  });
+        });
       }
     }
   });
@@ -66,20 +73,31 @@ app.post('/register', (req, res) => {
 // Login route
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-
+ 
   // Perform login authentication logic
   const query = 'SELECT * FROM users WHERE username = $1'
   const values = [username]
-
+ 
   pool.query(query, values, (err, resp) => {
     if (err) {
       console.log(err.stack);
       return res.status(500).json({ error: 'Server error' });
     } else {
       if (resp.rows[0]) {
-        console.log(resp.rows[0]);
-        return res.json({ message: 'Login successful' });
+        bcrypt.compare(password, resp.rows[0]['password'], (err, result) => {
+          if (err || !result) {
+            if (!result) {
+              console.log('Invalid credentials: ' + username);
+	    } else {
+              console.log(err.stack);
+	    }
+            return res.status(401).json({ error: 'Invalid credentials' });
+          }
+          console.log('Login: ' + username);
+          return res.json({ message: 'Login successful' });
+        });
       } else {
+        console.log('No user: ' + username);
         return res.status(401).json({ error: 'Invalid credentials' });
       }
     }

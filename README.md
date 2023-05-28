@@ -10,7 +10,7 @@ CREATE TABLE users (
 
 run app
 ```terminal
-npm install express body-parser pg
+npm install express body-parser bcrypt pg
 node app.js
 ```
 
