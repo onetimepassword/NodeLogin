@@ -1,5 +1,8 @@
 const express = require("express");
 const { Pool } = require('pg');
+const bodyParser = require('body-parser');
+const bcrypt = require('bcrypt');
+
 const app = express();
 
 let count = 0
@@ -13,13 +16,16 @@ const pool = new Pool({
   port: 5432,
 });
 
+// JSON middleware
+app.use(express.json());
+
 app.get("/", (req, res) => {
   // Redirect to an alternate port (e.g., 3000)
   const redirectUrl = `http://${req.hostname}:3000${req.url}`;
   res.redirect(redirectUrl);
 });
 
-let port = 8080
+const port = 8080
 app.listen(port, () => {
 	// Test the connection
 	pool.query('SELECT NOW()', (err, res) => {
@@ -32,75 +38,40 @@ app.listen(port, () => {
   console.log("Server listening on port " + port);
 });
 
-// JSON middleware
-app.use(express.json());
 
-// Sample data
-let users = [
-  { id: 1, name: "John Doe", email: "john@example.com" },
-  { id: 2, name: "Jane Smith", email: "jane@example.com" }
-];
+// curl -X POST -H "Content-Type: application/json" -d '{"username":"john", "password":"secret"}' http://pithree:8080/register
+// Registration route
+app.post('/register', (req, res) => {
+  const { username, password } = req.body;
 
-// Get all users
-app.get("/users", (req, res) => {
-  //res.json(users);
-  // Use the pool to execute queries
-  pool.query('SELECT * FROM users', (err, resp) => {
+  // Check if the username is already taken
+  const query = 'select * from users where username = $1'
+  const values = [username]
+
+    // callback
+  pool.query(query, values, (err, resp) => {
     if (err) {
-      console.error('Error executing query:', err);
+      console.log(err.stack);
     } else {
-      console.log('Query result:', resp.rows);
+      if (resp.rows.length == 1) {
+        console.log(resp.rows[0]);
+        return res.json({ error: 'Username already taken' });
+      } else { 
+        const insert = 'insert into users(username, password) values ($1, $2)'
+        const user = [username, password]
+        pool.query(insert, user, (err, resp) => {
+          if (err) {
+            console.log(err.stack);
+            return res.json({ error: 'Error adding user: ' + username});
+          } else {
+            return res.json({ error: 'Registered user' });
+	  }
+	});
+      }
     }
-    res.json(resp)
   });
 });
 
-// Get a single user by ID
-app.get("/users/:id", (req, res) => {
-  const userId = parseInt(req.params.id);
-  const user = users.find(u => u.id === userId);
-
-  if (user) {
-    res.json(user);
-  } else {
-    res.status(404).json({ error: "User not found" });
-  }
-});
-
-// Create a new user
-app.post("/users", (req, res) => {
-  const newUser = req.body;
-  users.push(newUser);
-  res.status(201).json(newUser);
-});
-
-// Update an existing user
-app.put("/users/:id", (req, res) => {
-  const userId = parseInt(req.params.id);
-  const updatedUser = req.body;
-  const index = users.findIndex(u => u.id === userId);
-
-  if (index !== -1) {
-    users[index] = { ...users[index], ...updatedUser };
-    res.json(users[index]);
-  } else {
-    res.status(404).json({ error: "User not found" });
-  }
-});
-
-// Delete a user
-app.delete("/users/:id", (req, res) => {
-  const userId = parseInt(req.params.id);
-  const index = users.findIndex(u => u.id === userId);
-
-  if (index !== -1) {
-    const deletedUser = users[index];
-    users.splice(index, 1);
-    res.json(deletedUser);
-  } else {
-    res.status(404).json({ error: "User not found" });
-  }
-});
 
 // curl -X POST -H "Content-Type: application/json" -d '{"username":"john", "password":"secret"}' http://pithree:8080/login
 // Login route
@@ -112,12 +83,23 @@ app.post('/login', (req, res) => {
   count += 1;
   console.log("count " + count);
 
-  if (username === 'john' && password === 'secret') {
-    res.json({ message: 'Login successful', code: count });
-	
-  } else {
-    res.status(401).json({ error: 'Invalid credentials' });
-  }
+   // Check if the username is already taken
+  const query = 'SELECT * FROM users WHERE username = $1'
+  const values = [username]
+
+    // callback
+  pool.query(query, values, (err, resp) => {
+    if (err) {
+      console.log(err.stack);
+    } else {
+      if (resp.rows[0]) {
+        console.log(resp.rows[0]);
+        res.json({ message: 'Login successful', code: count });
+      } else {
+        res.status(401).json({ error: 'Invalid credentials' });
+      }
+    }
+  });
 });
 
 // Close the pool when the application exits
