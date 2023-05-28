@@ -24,4 +24,4 @@ curl -X POST -H "Content-Type: application/json" -d '{"username":"goerge", "pass
 curl -X POST -H "Content-Type: application/json" -d '{"username":"goerge", "password":"secret"}' http://localhost:8080/login
 ```
 
-which unique constraint the admin can force an update by setting the password to NULL
+with unique constraint the admin can force an update by setting the password to NULL
