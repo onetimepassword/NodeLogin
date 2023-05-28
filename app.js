@@ -5,8 +5,6 @@ const { Pool } = require('pg');
 
 const app = express();
 
-let count = 0
-
 // Create a new pool instance
 const pool = new Pool({
   user: 'postgres',
@@ -37,12 +35,13 @@ app.post('/register', (req, res) => {
   const { username, password } = req.body;
 
   // Check if the username is already taken
-  const query = 'SELECT * FROM users WHERE username = $1'
+  const query = 'SELECT * FROM users WHERE username = $1 AND password IS NOT NULL'
   const values = [username]
 
   pool.query(query, values, (err, resp) => {
     if (err) {
       console.log(err.stack);
+      return res.status(500).json({ error: 'Internal server error' });
     } else {
       if (resp.rows.length == 1) {
 	console.log('Already registered: ' + username);
@@ -53,7 +52,7 @@ app.post('/register', (req, res) => {
             console.log(err.stack);
             return res.status(500).json({ error: 'Internal server error' });
           }
-          const insert = 'INSERT INTO users(username, password) VALUES ($1, $2)'
+          const insert = 'INSERT INTO users(username, password) VALUES ($1, $2) ON CONFLICT(username) DO UPDATE SET password = $2'
           const user = [username, hashedPassword]
           pool.query(insert, user, (err, resp) => {
             if (err) {

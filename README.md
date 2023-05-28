@@ -6,6 +6,8 @@ CREATE TABLE users (
   username VARCHAR(50) NOT NULL,
   password VARCHAR NOT NULL
 );
+
+ALTER TABLE users ADD CONSTRAINT name UNIQUE (username);
 ```
 
 run app
@@ -21,3 +23,5 @@ curl -X POST -H "Content-Type: application/json" -d '{"username":"goerge", "pass
 curl -X POST -H "Content-Type: application/json" -d '{"username":"goerge", "password":"incorrect"}' http://localhost:8080/login
 curl -X POST -H "Content-Type: application/json" -d '{"username":"goerge", "password":"secret"}' http://localhost:8080/login
 ```
+
+which unique constraint the admin can force an update by setting the password to NULL
