@@ -40,7 +40,6 @@ app.post('/register', (req, res) => {
   const query = 'SELECT * FROM users WHERE username = $1'
   const values = [username]
 
-    // callback
   pool.query(query, values, (err, resp) => {
     if (err) {
       console.log(err.stack);
@@ -72,7 +71,6 @@ app.post('/login', (req, res) => {
   const query = 'SELECT * FROM users WHERE username = $1'
   const values = [username]
 
-  // callback
   pool.query(query, values, (err, resp) => {
     if (err) {
       console.log(err.stack);
