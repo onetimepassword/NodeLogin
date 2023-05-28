@@ -1,7 +1,17 @@
 const express = require("express");
+const { Pool } = require('pg');
 const app = express();
 
 let count = 0
+
+// Create a new pool instance
+const pool = new Pool({
+  user: 'postgres',
+  host: 'localhost',
+  database: 'mydatabase',
+  password: 'mypassword',
+  port: 5432,
+});
 
 app.get("/", (req, res) => {
   // Redirect to an alternate port (e.g., 3000)
@@ -11,6 +21,14 @@ app.get("/", (req, res) => {
 
 let port = 8080
 app.listen(port, () => {
+	// Test the connection
+	pool.query('SELECT NOW()', (err, res) => {
+	  if (err) {
+	    console.error('Error connecting to the database:', err);
+	  } else {
+	    console.log('Connected to the database');
+	  }
+	});
   console.log("Server listening on port " + port);
 });
 
@@ -25,7 +43,16 @@ let users = [
 
 // Get all users
 app.get("/users", (req, res) => {
-  res.json(users);
+  //res.json(users);
+  // Use the pool to execute queries
+  pool.query('SELECT * FROM users', (err, resp) => {
+    if (err) {
+      console.error('Error executing query:', err);
+    } else {
+      console.log('Query result:', resp.rows);
+    }
+    res.json(resp)
+  });
 });
 
 // Get a single user by ID
@@ -92,3 +119,9 @@ app.post('/login', (req, res) => {
     res.status(401).json({ error: 'Invalid credentials' });
   }
 });
+
+// Close the pool when the application exits
+process.on('exit', () => {
+  pool.end();
+});
+
